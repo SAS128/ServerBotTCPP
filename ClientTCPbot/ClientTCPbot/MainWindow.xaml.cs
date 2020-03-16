@@ -12,6 +12,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using Telegram.Bot;
 
 namespace ClientTCPbot
 {
@@ -20,9 +21,12 @@ namespace ClientTCPbot
     /// </summary>
     public partial class MainWindow : Window
     {
+        static TelegramBotClient client;
         public MainWindow()
         {
             InitializeComponent();
+            client = new TelegramBotClient("1125825450:AAF0L7OLkTMJWLdOpVkL7ua1vAXN6I8rm58");
+            client.StartReceiving();
         }
     }
 }
