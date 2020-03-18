@@ -17,7 +17,7 @@ namespace ClientTCPbot
     {
         static TelegramBotClient client;
         static string pathDB= "ID_Chat_PersonDB.sqlite";
-        static string TextMessage=String.Empty;
+        static string TextMessage="Hello there";
         public MainWindow()
         {
             InitializeComponent();
@@ -36,6 +36,8 @@ namespace ClientTCPbot
 
                 LoadUserListFromDB(pathDB);
             }
+    
+
 
 
         }
@@ -53,15 +55,19 @@ namespace ClientTCPbot
                         using (SQLiteDataReader reader = command.ExecuteReader())
                         {
 
-
+                            ////
+                            ////Предусмотреть отсутсттвие USERNAME
+                            ////
 
                             while (reader.Read())
                             {
                                 
                                 UserBox.Items.Add(new CheckBox());
-                                (UserBox.Items[0] as CheckBox).Content = reader.GetValue(0).ToString();
+                                (UserBox.Items[UserBox.Items.Count-1] as CheckBox).Content = reader.GetValue(0).ToString();
                             }
-
+                            ////
+                            ////Предусмотреть отсутсттвие USERNAME
+                            ////
 
                         }
                     }
@@ -154,18 +160,40 @@ namespace ClientTCPbot
 
         }
 
-        static public int GetUserChatID(string pathToDB)
+
+
+        static public void SendMassageToConcreteUsers(ListBox UserBoxTmp)
+        {
+            try
+            {
+                foreach (CheckBox item in UserBoxTmp.Items)
+                {
+                    if (item.IsChecked == true)
+                    {
+                        SendMessgeToUser(GetUserChatID(pathDB, item.Content.ToString()));
+                    }
+                }
+            }
+            catch(Exception ex)
+            {
+                MessageBox.Show(ex.Message, ex.Message);
+            }
+        }
+
+
+        static public int GetUserChatID(string pathToDB,string UserName)
         {
             int IDChat = -1;
             using (SQLiteConnection connection = new SQLiteConnection($"Data Source={pathToDB}"))
             {
                 connection.Open();
-                using (SQLiteCommand command = new SQLiteCommand("SELECT UserConfig.UserName,ChatIDTable.ChatsID FROM UserConfig UserConfig Inner Join ChatIDTable ChatIDTable ON ChatIDTable.ID=UserConfig.IDChaIDTable", connection))
+                using (SQLiteCommand command = new SQLiteCommand($"SELECT UserConfig.UserName,ChatIDTable.ChatsID,UserConfig.[IDChatIDTable] FROM UserConfig UserConfig Inner Join ChatIDTable ChatIDTable ON ChatIDTable.ID=UserConfig.[IDChatIDTable] WHERE UserConfig.[UserName]='{UserName}'", connection))
                 {
                     using (SQLiteDataReader reader = command.ExecuteReader())
                     {
                         while (reader.Read())
                         {
+                          
                             MessageBox.Show(reader.GetValue(1).ToString(), "Smth");
                             IDChat = reader.GetInt32(1);
                         }
@@ -268,7 +296,9 @@ namespace ClientTCPbot
             }
         }
 
-
-
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            SendMassageToConcreteUsers(UserBox);
+        }
     }
 }
