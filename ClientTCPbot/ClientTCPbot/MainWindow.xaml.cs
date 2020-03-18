@@ -60,13 +60,13 @@ namespace ClientTCPbot
 
 
         }
-     
+
         private void LoadUserListFromDB(string pathToDB)
         {
             using (SQLiteConnection connection = new SQLiteConnection($"Data Source={pathToDB}"))
             {
                 connection.Open();
-                using (SQLiteCommand command = new SQLiteCommand("SELECT [UserName] FROM UserConfig",connection))
+                using (SQLiteCommand command = new SQLiteCommand("SELECT [UserName] FROM UserConfig", connection))
                 {
                     try
                     {
@@ -80,9 +80,9 @@ namespace ClientTCPbot
 
                             while (reader.Read())
                             {
-                                
+
                                 UserBox.Items.Add(new CheckBox());
-                                (UserBox.Items[UserBox.Items.Count-1] as CheckBox).Content = reader.GetValue(0).ToString();
+                                (UserBox.Items[UserBox.Items.Count - 1] as CheckBox).Content = reader.GetValue(0).ToString();
                             }
                             ////
                             ////Предусмотреть отсутсттвие USERNAME
@@ -111,11 +111,17 @@ namespace ClientTCPbot
                 {
 
                     AddChatIDTableForDataBase(Convert.ToInt32(e.Message.Chat.Id), pathDB);
-          
+
                     string un = e.Message.Chat.Username; ;
                     int ID = GetCurentIDInDBTables(pathDB);
-
+                    if (un == null)
+                    {
+                        un = e.Message.Chat.Id.ToString();
+                    }
                     AddUserConfigInDataBase(un, ID, pathDB);
+
+                    Dispatcher.BeginInvoke(new Action(delegate { UserBox.Items.Add(new CheckBox()); (UserBox.Items[UserBox.Items.Count - 1] as CheckBox).Content = un.ToString(); }));
+
                 }
             }
             catch (Exception ex)
@@ -124,12 +130,14 @@ namespace ClientTCPbot
             }
         }
 
-        static int GetCurentIDInDBTables(string pathToDB )
+
+
+        static int GetCurentIDInDBTables(string pathToDB)
         {
             int result = -1;
             try
             {
-               
+
                 using (SQLiteConnection connection = new SQLiteConnection($"Data Source={pathToDB}"))
                 {
                     connection.Open();
@@ -140,41 +148,51 @@ namespace ClientTCPbot
                         {
                             if (reader.Read())
                             {
-                                MessageBox.Show(reader.GetInt32(0).ToString(),"");
-                                result = reader.GetInt32(0); }
+                                MessageBox.Show(reader.GetInt32(0).ToString(), "");
+                                result = reader.GetInt32(0);
+                            }
                         }
                     }
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                MessageBox.Show(ex.Message,ex.Message);
+                MessageBox.Show(ex.Message, ex.Message);
 
-                } 
+            }
             return result;
         }
 
-        
+
 
 
 
         static public void SendMessagesToAll(string pathToDB)
         {
-            using (SQLiteConnection connection = new SQLiteConnection($"Data Source={pathToDB}"))
+            try
             {
-                connection.Open();
-                using (SQLiteCommand command = new SQLiteCommand("SELECT * FROM ChatIDTable", connection))
+
+
+                using (SQLiteConnection connection = new SQLiteConnection($"Data Source={pathToDB}"))
                 {
-                    
-                    using (SQLiteDataReader reader = command.ExecuteReader())
+                    connection.Open();
+                    using (SQLiteCommand command = new SQLiteCommand("SELECT * FROM ChatIDTable", connection))
                     {
-                        while (reader.Read())
+
+                        using (SQLiteDataReader reader = command.ExecuteReader())
                         {
-                            MessageBox.Show(reader.GetValue(1).ToString(),"Smth");
-                            SendMessgeToUser(reader.GetInt32(1));
+                            while (reader.Read())
+                            {
+                                MessageBox.Show(reader.GetValue(1).ToString(), "Smth");
+                                SendMessgeToUser(reader.GetInt32(1));
+                            }
                         }
                     }
                 }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, ex.Message);
             }
 
         }
@@ -193,14 +211,14 @@ namespace ClientTCPbot
                     }
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 MessageBox.Show(ex.Message, ex.Message);
             }
         }
 
 
-        static public int GetUserChatID(string pathToDB,string UserName)
+        static public int GetUserChatID(string pathToDB, string UserName)
         {
             int IDChat = -1;
             using (SQLiteConnection connection = new SQLiteConnection($"Data Source={pathToDB}"))
@@ -212,7 +230,7 @@ namespace ClientTCPbot
                     {
                         while (reader.Read())
                         {
-                          
+
                             MessageBox.Show(reader.GetValue(1).ToString(), "Smth");
                             IDChat = reader.GetInt32(1);
                         }
@@ -224,7 +242,7 @@ namespace ClientTCPbot
 
         static public void SendMessgeToUser(int ChatID)
         {
-            client.SendTextMessageAsync(new Telegram.Bot.Types.ChatId(ChatID),TextMessage);
+            client.SendTextMessageAsync(new Telegram.Bot.Types.ChatId(ChatID), TextMessage);
         }
 
 
@@ -294,7 +312,7 @@ namespace ClientTCPbot
         }
 
 
-        private static void AddUserConfigInDataBase( string username, int idChatIDTable, string path_to_db)
+        private static void AddUserConfigInDataBase(string username, int idChatIDTable, string path_to_db)
         {
             using (SQLiteConnection connection = new SQLiteConnection($"Data Source = {path_to_db}"))
             {
@@ -319,7 +337,6 @@ namespace ClientTCPbot
         {
             SendMassageToConcreteUsers(UserBox);
         }
-
         void TheList_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
         {
             foreach (BoolStringClass item in e.NewItems)
