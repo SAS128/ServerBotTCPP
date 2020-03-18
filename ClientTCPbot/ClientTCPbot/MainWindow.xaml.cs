@@ -57,7 +57,7 @@ namespace ClientTCPbot
 
                             while (reader.Read())
                             {
-                                MessageBox.Show(reader.GetValue(0).ToString(), "Smth");
+                                
                                 UserBox.Items.Add(new CheckBox());
                                 (UserBox.Items[0] as CheckBox).Content = reader.GetValue(0).ToString();
                             }
@@ -108,13 +108,14 @@ namespace ClientTCPbot
                 using (SQLiteConnection connection = new SQLiteConnection($"Data Source={pathToDB}"))
                 {
                     connection.Open();
-                    using (SQLiteCommand cmd = new SQLiteCommand("SELECT last_insert_rowid()", connection))
+                    using (SQLiteCommand cmd = new SQLiteCommand("select seq from sqlite_sequence where name='ChatIDTable'", connection))
                     {
 
                         using (SQLiteDataReader reader = cmd.ExecuteReader())
                         {
                             if (reader.Read())
                             {
+                                MessageBox.Show(reader.GetInt32(0).ToString(),"");
                                 result = reader.GetInt32(0); }
                         }
                     }
@@ -192,7 +193,7 @@ namespace ClientTCPbot
                 connection.Open();
                 using (SQLiteCommand command = new SQLiteCommand("CREATE TABLE IF NOT EXISTS ChatIDTable" +
                      "([id] INTEGER PRIMARY KEY AUTOINCREMENT," +
-                     "[ChatsID] INTEGER NOT NULL,", connection))
+                     "[ChatsID] INTEGER NOT NULL);", connection))
                 {
                     try
                     {
@@ -231,7 +232,7 @@ namespace ClientTCPbot
             {
                 connection.Open();
 
-                using (SQLiteCommand command = new SQLiteCommand($"INSERT INTO ChatIDTable([ChatsID]) VALUES ('{chat_id}')", connection))
+                using (SQLiteCommand command = new SQLiteCommand($"INSERT INTO ChatIDTable([ChatsID]) VALUES ({chat_id})", connection))
                 {
                     try
                     {
@@ -252,7 +253,7 @@ namespace ClientTCPbot
             {
                 connection.Open();
 
-                using (SQLiteCommand command = new SQLiteCommand($"INSERT INTO UserConfig([UserName],[IDChatIDTable],) VALUES ('{username}',{idChatIDTable})", connection))
+                using (SQLiteCommand command = new SQLiteCommand($"INSERT INTO UserConfig([UserName],[IDChatIDTable]) VALUES ('{username}',{idChatIDTable})", connection))
                 {
                     try
                     {
