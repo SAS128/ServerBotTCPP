@@ -6,10 +6,28 @@
         xmlns:local="clr-namespace:ClientTCPbot"
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
-    <Grid Background="Aquamarine">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"></ColumnDefinition>
+            <ColumnDefinition Width="0.5*"></ColumnDefinition>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition  Height="0.7*"></RowDefinition>
+            <RowDefinition  Height="*"></RowDefinition>
+            <RowDefinition Height="*"></RowDefinition>
+            <RowDefinition Height="0.7*"></RowDefinition>
+        </Grid.RowDefinitions>
+        <ListBox Grid.Column="1" Grid.Row="1"  Grid.RowSpan="3" Background="#FAA98B" ItemsSource="{Binding TheList}">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <CheckBox IsChecked="{Binding IsSelected}" Content="{Binding TheText}"/>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+        <CheckBox Checked="CheckBox_Checked" Unchecked="CheckBox_Unchecked" Content="Select All"  Margin="10.2,33,-10.4,10.4" Grid.Column="1"/>
 
-
-        <ListBox  Name="UserBox" Width="300" Height="400" Margin="0,0,300,0"  ></ListBox>
-        <Button Width="100" Height="50" Content="Send" Margin="100,350,0,0" Background="Red" Click="Button_Click" ></Button>
+        <TextBox Name="TxtBx" Grid.Row="3" Margin="0,26.4,109.8,10" />
+        <ListBox  Name="UserBox" Margin="0,0,4.8,86" Grid.RowSpan="4"  />
+        <Button Width="100" Height="50" Content="Send" Margin="419,26.4,9.8,10" Background="Red" Click="Button_Click" Grid.Column="0" Grid.Row="3"></Button>
     </Grid>
 </Window>

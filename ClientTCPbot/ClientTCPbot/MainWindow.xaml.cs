@@ -7,6 +7,9 @@ using System.Windows;
 using System.Windows.Controls;
 using Telegram.Bot;
 using Telegram.Bot.Args;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.ComponentModel;
 
 namespace ClientTCPbot
 {
@@ -15,6 +18,7 @@ namespace ClientTCPbot
     /// </summary>
     public partial class MainWindow : Window
     {
+        public ObservableCollection<BoolStringClass> TheList { get; set; }
         static TelegramBotClient client;
         static string pathDB= "ID_Chat_PersonDB.sqlite";
         static string TextMessage="Hello there";
@@ -36,8 +40,23 @@ namespace ClientTCPbot
 
                 LoadUserListFromDB(pathDB);
             }
-    
 
+            TheList = new ObservableCollection<BoolStringClass>();
+
+            TheList.CollectionChanged += TheList_CollectionChanged;
+
+            TheList.Add(new BoolStringClass { IsSelected = true, TheText = "Some text for item #1" });
+            TheList.Add(new BoolStringClass { IsSelected = false, TheText = "Some text for item #2" });
+            TheList.Add(new BoolStringClass { IsSelected = false, TheText = "Some text for item #3" });
+            TheList.Add(new BoolStringClass { IsSelected = false, TheText = "Some text for item #4" });
+            TheList.Add(new BoolStringClass { IsSelected = false, TheText = "Some text for item #5" });
+            TheList.Add(new BoolStringClass { IsSelected = true, TheText = "Some text for item #6" });
+            TheList.Add(new BoolStringClass { IsSelected = false, TheText = "Some text for item #7" });
+
+            foreach (var item in TheList)
+                item.PropertyChanged += TheList_Item_PropertyChanged;
+
+            this.DataContext = this;
 
 
         }
@@ -300,5 +319,82 @@ namespace ClientTCPbot
         {
             SendMassageToConcreteUsers(UserBox);
         }
+
+        void TheList_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+        {
+            foreach (BoolStringClass item in e.NewItems)
+                UnselectOtherItems(item);
+        }
+
+        void TheList_Item_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            UnselectOtherItems((BoolStringClass)sender);
+        }
+
+
+        void UnselectOtherItems(BoolStringClass TheChangedItem)
+        {
+            if (TheChangedItem.IsSelected)
+            {
+                var OtherSelectedItems =
+                    TheList.Where(
+                            i => !ReferenceEquals(i, TheChangedItem)
+                        ).AsEnumerable<BoolStringClass>();
+
+                foreach (BoolStringClass item in OtherSelectedItems)
+                    item.IsSelected = false;
+            }
+        }
+
+
+        ///select all
+        private void CheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            SelectAll(true);
+        }
+
+        private void CheckBox_Unchecked(object sender, RoutedEventArgs e)
+        {
+            SelectAll(false);
+        }
+
+        private void SelectAll(bool select)
+        {
+            var res = (
+                        from item in TheList
+                        select item
+                    ).ToList<BoolStringClass>();
+
+            if (res != null)
+            {
+                foreach (var source in res)
+                    source.IsSelected = select;
+            }
+        }
+    }
+
+    public class BoolStringClass : INotifyPropertyChanged
+    {
+        public string TheText { get; set; }
+
+        private bool _fIsSelected = false;
+        public bool IsSelected
+        {
+            get { return _fIsSelected; }
+            set
+            {
+                _fIsSelected = value;
+                this.OnPropertyChanged("IsSelected");
+            }
+        }
+
+
+        public event PropertyChangedEventHandler PropertyChanged;
+        protected void OnPropertyChanged(string strPropertyName)
+        {
+            if (PropertyChanged != null)
+                PropertyChanged(this, new PropertyChangedEventArgs(strPropertyName));
+        }
+
     }
 }
