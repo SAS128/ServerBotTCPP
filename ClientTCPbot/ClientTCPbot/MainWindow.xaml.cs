@@ -25,39 +25,45 @@ namespace ClientTCPbot
         public MainWindow()
         {
             InitializeComponent();
-            string smth = ConfigurationSettings.AppSettings.Get("TeleBotClientKey");
-            client = new TelegramBotClient(smth);
-            client.OnMessage+=AnswerTheQuestion;
-            client.StartReceiving();
-            if (!CheckExistDataBase(pathDB))
+            try
             {
-                CreateDataBase(pathDB);
-                UserBox.Items.Add(new CheckBox());
-                (UserBox.Items[0] as CheckBox).Content = "Smth";
+                TheList = new ObservableCollection<BoolStringClass>();
+
+                TheList.CollectionChanged += TheList_CollectionChanged;
+                string smth = ConfigurationSettings.AppSettings.Get("TeleBotClientKey");
+                client = new TelegramBotClient(smth);
+                client.OnMessage += AnswerTheQuestion;
+                client.StartReceiving();
+                if (!CheckExistDataBase(pathDB))
+                {
+                    CreateDataBase(pathDB);
+
+                }
+                else
+                {
+
+                    LoadUserListFromDB(pathDB);
+                }
+
+
+
+                //TheList.Add(new BoolStringClass { IsSelected = true, TheText = "Some text for item #1" });
+                //TheList.Add(new BoolStringClass { IsSelected = false, TheText = "Some text for item #2" });
+                //TheList.Add(new BoolStringClass { IsSelected = false, TheText = "Some text for item #3" });
+                //TheList.Add(new BoolStringClass { IsSelected = false, TheText = "Some text for item #4" });
+                //TheList.Add(new BoolStringClass { IsSelected = false, TheText = "Some text for item #5" });
+                //TheList.Add(new BoolStringClass { IsSelected = true, TheText = "Some text for item #6" });
+                //TheList.Add(new BoolStringClass { IsSelected = false, TheText = "Some text for item #7" });
+
+                foreach (var item in TheList)
+                    item.PropertyChanged += TheList_Item_PropertyChanged;
+
+                this.DataContext = this;
             }
-            else
+            catch(Exception ex)
             {
-
-                LoadUserListFromDB(pathDB);
+                MessageBox.Show(ex.Message);
             }
-
-            TheList = new ObservableCollection<BoolStringClass>();
-
-            TheList.CollectionChanged += TheList_CollectionChanged;
-
-            TheList.Add(new BoolStringClass { IsSelected = true, TheText = "Some text for item #1" });
-            TheList.Add(new BoolStringClass { IsSelected = false, TheText = "Some text for item #2" });
-            TheList.Add(new BoolStringClass { IsSelected = false, TheText = "Some text for item #3" });
-            TheList.Add(new BoolStringClass { IsSelected = false, TheText = "Some text for item #4" });
-            TheList.Add(new BoolStringClass { IsSelected = false, TheText = "Some text for item #5" });
-            TheList.Add(new BoolStringClass { IsSelected = true, TheText = "Some text for item #6" });
-            TheList.Add(new BoolStringClass { IsSelected = false, TheText = "Some text for item #7" });
-
-            foreach (var item in TheList)
-                item.PropertyChanged += TheList_Item_PropertyChanged;
-
-            this.DataContext = this;
-
 
         }
 
@@ -68,32 +74,28 @@ namespace ClientTCPbot
                 connection.Open();
                 using (SQLiteCommand command = new SQLiteCommand("SELECT [UserName] FROM UserConfig", connection))
                 {
-                    try
+
+                    using (SQLiteDataReader reader = command.ExecuteReader())
                     {
 
-                        using (SQLiteDataReader reader = command.ExecuteReader())
-                        {
 
-                            ////
-                            ////Предусмотреть отсутсттвие USERNAME
-                            ////
+                        try
+                        {
 
                             while (reader.Read())
                             {
-
+                               TheList.Add(new BoolStringClass { IsSelected = false, TheText = reader.GetValue(0).ToString() });
                                 UserBox.Items.Add(new CheckBox());
                                 (UserBox.Items[UserBox.Items.Count - 1] as CheckBox).Content = reader.GetValue(0).ToString();
                             }
-                            ////
-                            ////Предусмотреть отсутсттвие USERNAME
-                            ////
-
                         }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show(ex.Message, ex.Message);
+                        }
+
                     }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show(ex.Message, ex.Message);
-                    }
+
 
                 }
             }
@@ -119,8 +121,10 @@ namespace ClientTCPbot
                         un = e.Message.Chat.Id.ToString();
                     }
                     AddUserConfigInDataBase(un, ID, pathDB);
+                    
 
-                    Dispatcher.BeginInvoke(new Action(delegate { UserBox.Items.Add(new CheckBox()); (UserBox.Items[UserBox.Items.Count - 1] as CheckBox).Content = un.ToString(); }));
+
+                    Dispatcher.BeginInvoke(new Action(delegate { TheList.Add(new BoolStringClass { IsSelected = false, TheText = un.ToString() }); UserBox.Items.Add(new CheckBox()); (UserBox.Items[UserBox.Items.Count - 1] as CheckBox).Content = un.ToString(); }));
 
                 }
             }
@@ -130,6 +134,8 @@ namespace ClientTCPbot
             }
         }
 
+
+        
 
 
         static int GetCurentIDInDBTables(string pathToDB)
@@ -167,7 +173,7 @@ namespace ClientTCPbot
 
 
 
-        static public void SendMessagesToAll(string pathToDB)
+        public void SendMessagesToAll(string pathToDB)
         {
             try
             {
@@ -199,15 +205,15 @@ namespace ClientTCPbot
 
 
 
-        static public void SendMassageToConcreteUsers(ListBox UserBoxTmp)
+        public void SendMassageToConcreteUsers(ListBox UserBoxTmp)
         {
             try
             {
-                foreach (CheckBox item in UserBoxTmp.Items)
+                foreach (BoolStringClass item in TheList)
                 {
-                    if (item.IsChecked == true)
+                    if (item.IsSelected == true)
                     {
-                        SendMessgeToUser(GetUserChatID(pathDB, item.Content.ToString()));
+                        SendMessgeToUser(GetUserChatID(pathDB, item.TheText.ToString()));
                     }
                 }
             }
@@ -240,9 +246,9 @@ namespace ClientTCPbot
             return IDChat;
         }
 
-        static public void SendMessgeToUser(int ChatID)
+        public void SendMessgeToUser(int ChatID)
         {
-            client.SendTextMessageAsync(new Telegram.Bot.Types.ChatId(ChatID), TextMessage);
+            client.SendTextMessageAsync(new Telegram.Bot.Types.ChatId(ChatID), TxtBx.Text);
         }
 
 
@@ -339,28 +345,34 @@ namespace ClientTCPbot
         }
         void TheList_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
         {
-            foreach (BoolStringClass item in e.NewItems)
-                UnselectOtherItems(item);
+            //foreach (BoolStringClass item in e.NewItems)
+            //    UnselectOtherItems(item);
+
+            //ЧТОТО ПЛОХОЕ
         }
 
         void TheList_Item_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            UnselectOtherItems((BoolStringClass)sender);
+            //UnselectOtherItems((BoolStringClass)sender);
+
+            //ЧТОТО ПЛОХОЕ
         }
 
 
         void UnselectOtherItems(BoolStringClass TheChangedItem)
         {
-            if (TheChangedItem.IsSelected)
-            {
-                var OtherSelectedItems =
-                    TheList.Where(
-                            i => !ReferenceEquals(i, TheChangedItem)
-                        ).AsEnumerable<BoolStringClass>();
+            //if (TheChangedItem.IsSelected)
+            //{
+            //    var OtherSelectedItems =
+            //        TheList.Where(
+            //                i => !ReferenceEquals(i, TheChangedItem)
+            //            ).AsEnumerable<BoolStringClass>();
 
-                foreach (BoolStringClass item in OtherSelectedItems)
-                    item.IsSelected = false;
-            }
+            //    foreach (BoolStringClass item in OtherSelectedItems)
+            //        item.IsSelected = false;
+            //}
+
+            //ЧТОТО ПЛОХОЕ
         }
 
 
@@ -385,7 +397,9 @@ namespace ClientTCPbot
             if (res != null)
             {
                 foreach (var source in res)
+                {
                     source.IsSelected = select;
+                }
             }
         }
     }
