@@ -85,8 +85,7 @@ namespace ClientTCPbot
                             while (reader.Read())
                             {
                                TheList.Add(new BoolStringClass { IsSelected = false, TheText = reader.GetValue(0).ToString() });
-                                UserBox.Items.Add(new CheckBox());
-                                (UserBox.Items[UserBox.Items.Count - 1] as CheckBox).Content = reader.GetValue(0).ToString();
+                                
                             }
                         }
                         catch (Exception ex)
@@ -109,9 +108,8 @@ namespace ClientTCPbot
             try
             {
                 string UserName = e.Message.Chat.Username;
-                if (e.Message.Text == "/start")
+                if (e.Message.Text == "/start" && !IsClientInDB(pathDB, Convert.ToInt32(e.Message.Chat.Id)))
                 {
-
                     AddChatIDTableForDataBase(Convert.ToInt32(e.Message.Chat.Id), pathDB);
 
                     string un = e.Message.Chat.Username; ;
@@ -124,7 +122,7 @@ namespace ClientTCPbot
                     
 
 
-                    Dispatcher.BeginInvoke(new Action(delegate { TheList.Add(new BoolStringClass { IsSelected = false, TheText = un.ToString() }); UserBox.Items.Add(new CheckBox()); (UserBox.Items[UserBox.Items.Count - 1] as CheckBox).Content = un.ToString(); }));
+                    Dispatcher.BeginInvoke(new Action(delegate { TheList.Add(new BoolStringClass { IsSelected = false, TheText = un.ToString() }); }));
 
                 }
             }
@@ -134,7 +132,39 @@ namespace ClientTCPbot
             }
         }
 
+        public bool IsClientInDB(string pathToDB,int IdChat)
+        {
+            bool tmp= false;
 
+            using (SQLiteConnection connection = new SQLiteConnection($"Data Source={pathToDB}"))
+            {
+                connection.Open();
+                using (SQLiteCommand command = new SQLiteCommand("SELECT [ChatsID] FROM ChatIDTable", connection))
+                {
+
+                    using (SQLiteDataReader reader = command.ExecuteReader())
+                    {
+                        try
+                        {
+
+                            while (reader.Read())
+                            {
+                               if (reader.GetInt32(0)== IdChat)
+                               {
+                                    tmp = true;
+                               }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show(ex.Message, ex.Message);
+                        }
+
+                    }
+                }
+            }
+            return tmp;
+        }
         
 
 
@@ -154,7 +184,7 @@ namespace ClientTCPbot
                         {
                             if (reader.Read())
                             {
-                                MessageBox.Show(reader.GetInt32(0).ToString(), "");
+                               
                                 result = reader.GetInt32(0);
                             }
                         }
@@ -189,7 +219,7 @@ namespace ClientTCPbot
                         {
                             while (reader.Read())
                             {
-                                MessageBox.Show(reader.GetValue(1).ToString(), "Smth");
+                               
                                 SendMessgeToUser(reader.GetInt32(1));
                             }
                         }
@@ -205,7 +235,7 @@ namespace ClientTCPbot
 
 
 
-        public void SendMassageToConcreteUsers(ListBox UserBoxTmp)
+        public void SendMassageToConcreteUsers()
         {
             try
             {
@@ -213,7 +243,16 @@ namespace ClientTCPbot
                 {
                     if (item.IsSelected == true)
                     {
-                        SendMessgeToUser(GetUserChatID(pathDB, item.TheText.ToString()));
+                        int tmpK = GetUserChatID(pathDB, item.TheText.ToString());
+                        if (tmpK > 0)
+                        {
+                            SendMessgeToUser(tmpK);
+                        }
+                        else
+                        {
+                            MessageBox.Show("Chat ID not Found!","DataBase Error");
+                        }
+                      
                     }
                 }
             }
@@ -237,7 +276,6 @@ namespace ClientTCPbot
                         while (reader.Read())
                         {
 
-                            MessageBox.Show(reader.GetValue(1).ToString(), "Smth");
                             IDChat = reader.GetInt32(1);
                         }
                     }
@@ -248,7 +286,16 @@ namespace ClientTCPbot
 
         public void SendMessgeToUser(int ChatID)
         {
-            client.SendTextMessageAsync(new Telegram.Bot.Types.ChatId(ChatID), TxtBx.Text);
+            try
+            {
+                client.SendTextMessageAsync(new Telegram.Bot.Types.ChatId(ChatID), TxtBx.Text);
+                TxtBx.Text = String.Empty;
+            }
+            catch(Exception ex)
+            {
+
+                MessageBox.Show(ex.Message); 
+            }
         }
 
 
@@ -272,7 +319,7 @@ namespace ClientTCPbot
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine(ex.Message);
+                        MessageBox.Show(ex.Message);
                     }
                 }
 
@@ -311,7 +358,7 @@ namespace ClientTCPbot
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine(ex.Message);
+                        MessageBox.Show(ex.Message);
                     }
                 }
             }
@@ -328,12 +375,12 @@ namespace ClientTCPbot
                 {
                     try
                     {
-                        //command.Parameters.Add(new SQLiteParameter("@text", question));
+                        
                         command.ExecuteNonQuery();
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine(ex.Message);
+                        MessageBox.Show(ex.Message);
                     }
                 }
             }
@@ -341,26 +388,43 @@ namespace ClientTCPbot
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            SendMassageToConcreteUsers(UserBox);
+            if (CheckForSelectAll.IsChecked == true)
+            {
+                TmpHistory.Text += Environment.NewLine + TxtBx.Text+">> TO ALL";
+                SendMessagesToAll(pathDB);
+                
+            }
+            else
+            {
+                TmpHistory.Text += Environment.NewLine + TxtBx.Text;
+                SendMassageToConcreteUsers();
+            }
         }
         void TheList_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
         {
             //foreach (BoolStringClass item in e.NewItems)
             //    UnselectOtherItems(item);
 
-            //ЧТОТО ПЛОХОЕ
+            //ЧТО-ТО ПЛОХОЕ(но пока не убирать)
         }
 
+        static bool IsSelectedAllAlready = false;
         void TheList_Item_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            //UnselectOtherItems((BoolStringClass)sender);
+            if (CheckForSelectAll.IsChecked == true && (sender as BoolStringClass).IsSelected == false)
+            {
+                IsSelectedAllAlready = true;
+                CheckForSelectAll.IsChecked = false;
+            }
 
-            //ЧТОТО ПЛОХОЕ
+            //ЧТО-ТО ПЛОХОЕ(но пока не убирать)
         }
 
 
         void UnselectOtherItems(BoolStringClass TheChangedItem)
         {
+
+
             //if (TheChangedItem.IsSelected)
             //{
             //    var OtherSelectedItems =
@@ -372,19 +436,27 @@ namespace ClientTCPbot
             //        item.IsSelected = false;
             //}
 
-            //ЧТОТО ПЛОХОЕ
+            //ЧТО-ТО ПЛОХОЕ(но пока не убирать)
         }
 
-
+      
         ///select all
         private void CheckBox_Checked(object sender, RoutedEventArgs e)
         {
+          
             SelectAll(true);
+            
         }
 
         private void CheckBox_Unchecked(object sender, RoutedEventArgs e)
         {
-            SelectAll(false);
+            if (!IsSelectedAllAlready)
+            {
+                SelectAll(false);
+            }
+            IsSelectedAllAlready = false;
+
+
         }
 
         private void SelectAll(bool select)
