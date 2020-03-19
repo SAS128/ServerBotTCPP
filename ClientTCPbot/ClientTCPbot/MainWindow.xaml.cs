@@ -18,10 +18,12 @@ namespace ClientTCPbot
     /// </summary>
     public partial class MainWindow : Window
     {
+        //Ссылка на бота 
+        // @Toyohisa_bot
+        // @Toyohisa_bot
         public ObservableCollection<BoolStringClass> TheList { get; set; }
         static TelegramBotClient client;
         static string pathDB= "ID_Chat_PersonDB.sqlite";
-        static string TextMessage="Hello there";
         public MainWindow()
         {
             InitializeComponent();
@@ -45,16 +47,6 @@ namespace ClientTCPbot
                     LoadUserListFromDB(pathDB);
                 }
 
-
-
-                //TheList.Add(new BoolStringClass { IsSelected = true, TheText = "Some text for item #1" });
-                //TheList.Add(new BoolStringClass { IsSelected = false, TheText = "Some text for item #2" });
-                //TheList.Add(new BoolStringClass { IsSelected = false, TheText = "Some text for item #3" });
-                //TheList.Add(new BoolStringClass { IsSelected = false, TheText = "Some text for item #4" });
-                //TheList.Add(new BoolStringClass { IsSelected = false, TheText = "Some text for item #5" });
-                //TheList.Add(new BoolStringClass { IsSelected = true, TheText = "Some text for item #6" });
-                //TheList.Add(new BoolStringClass { IsSelected = false, TheText = "Some text for item #7" });
-
                 foreach (var item in TheList)
                     item.PropertyChanged += TheList_Item_PropertyChanged;
 
@@ -66,7 +58,7 @@ namespace ClientTCPbot
             }
 
         }
-
+        // Функция загружает через sqlite пользователей которые добавили бота на экран.
         private void LoadUserListFromDB(string pathToDB)
         {
             using (SQLiteConnection connection = new SQLiteConnection($"Data Source={pathToDB}"))
@@ -102,7 +94,7 @@ namespace ClientTCPbot
 
 
 
-
+        //Те пользователи которые запустили бота отправляют start и их добавляют в базу данных 
         private void AnswerTheQuestion(object sender, MessageEventArgs e)
         {
             try
@@ -131,7 +123,7 @@ namespace ClientTCPbot
                 MessageBox.Show(ex.Message, ex.Message);
             }
         }
-
+        //Проверка на наличие пользователя в базе данных, дабы не добавлять пользователей которые пишут старт уже будучи в базе данных
         public bool IsClientInDB(string pathToDB,int IdChat)
         {
             bool tmp= false;
@@ -167,7 +159,7 @@ namespace ClientTCPbot
         }
         
 
-
+        //Получения id чата из базы данных
         static int GetCurentIDInDBTables(string pathToDB)
         {
             int result = -1;
@@ -202,7 +194,7 @@ namespace ClientTCPbot
 
 
 
-
+        //Отправка сообщения всем пользователям 
         public void SendMessagesToAll(string pathToDB)
         {
             try
@@ -234,7 +226,7 @@ namespace ClientTCPbot
         }
 
 
-
+        //Отправка сообщения конкретным пользователям 
         public void SendMassageToConcreteUsers()
         {
             try
@@ -262,14 +254,17 @@ namespace ClientTCPbot
             }
         }
 
-
+        //Получение имени пользователя, если оно есть
         static public int GetUserChatID(string pathToDB, string UserName)
         {
             int IDChat = -1;
             using (SQLiteConnection connection = new SQLiteConnection($"Data Source={pathToDB}"))
             {
                 connection.Open();
-                using (SQLiteCommand command = new SQLiteCommand($"SELECT UserConfig.UserName,ChatIDTable.ChatsID,UserConfig.[IDChatIDTable] FROM UserConfig UserConfig Inner Join ChatIDTable ChatIDTable ON ChatIDTable.ID=UserConfig.[IDChatIDTable] WHERE UserConfig.[UserName]='{UserName}'", connection))
+                using (SQLiteCommand command = new SQLiteCommand
+                    ($"SELECT UserConfig.UserName,ChatIDTable.ChatsID,UserConfig.[IDChatIDTable] FROM UserConfig UserConfig Inner " +
+                    $"Join ChatIDTable ChatIDTable ON ChatIDTable.ID=UserConfig.[IDChatIDTable] WHERE UserConfig.[UserName]='{UserName}'",
+                    connection))
                 {
                     using (SQLiteDataReader reader = command.ExecuteReader())
                     {
@@ -283,7 +278,7 @@ namespace ClientTCPbot
             }
             return IDChat;
         }
-
+        //Отправка сообщения простому пользователю
         public void SendMessgeToUser(int ChatID)
         {
             try
@@ -302,7 +297,8 @@ namespace ClientTCPbot
 
 
 
-
+        //Проверка на начие нужных таблиц 
+        //При их отсутствии функция создаст новые 
         private static bool CheckExistDataBase(string path) => File.Exists(path);
         private static void CreateDataBase(string path)
         {
@@ -343,7 +339,7 @@ namespace ClientTCPbot
 
 
 
-
+        //Добавление в таблицу в id чатов новый чат
         private static void AddChatIDTableForDataBase(int chat_id, string path_to_db)
         {
             using (SQLiteConnection connection = new SQLiteConnection($"Data Source = {path_to_db}"))
@@ -364,7 +360,7 @@ namespace ClientTCPbot
             }
         }
 
-
+        //Добавление в таблицу в пользователей нового пользователя
         private static void AddUserConfigInDataBase(string username, int idChatIDTable, string path_to_db)
         {
             using (SQLiteConnection connection = new SQLiteConnection($"Data Source = {path_to_db}"))
@@ -385,7 +381,7 @@ namespace ClientTCPbot
                 }
             }
         }
-
+        //Отправка сообщения
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             if (CheckForSelectAll.IsChecked == true)
@@ -420,26 +416,6 @@ namespace ClientTCPbot
             //ЧТО-ТО ПЛОХОЕ(но пока не убирать)
         }
 
-
-        void UnselectOtherItems(BoolStringClass TheChangedItem)
-        {
-
-
-            //if (TheChangedItem.IsSelected)
-            //{
-            //    var OtherSelectedItems =
-            //        TheList.Where(
-            //                i => !ReferenceEquals(i, TheChangedItem)
-            //            ).AsEnumerable<BoolStringClass>();
-
-            //    foreach (BoolStringClass item in OtherSelectedItems)
-            //        item.IsSelected = false;
-            //}
-
-            //ЧТО-ТО ПЛОХОЕ(но пока не убирать)
-        }
-
-      
         ///select all
         private void CheckBox_Checked(object sender, RoutedEventArgs e)
         {
